@@ -11,7 +11,7 @@ Inference Host: MacBook Pro (M5 Pro, 48GB RAM) running Ollama.
 Clients:
     MacBook Pro (Local VS Code)
     MS Surface with Windows 11 (Remote VS Code)
-IDE Integration: Continue.dev extension for VS Code.
+IDE Integration: continued extension for VS Code.
 Models:
     Chat & Reasoning: qwen2.5-coder:32b
     Tab-Autocomplete (FIM): qwen2.5-coder:7b
@@ -30,9 +30,12 @@ Models:
 
 💻 Client Configurations
 
-Both clients use the config.json file to dictate how the Continue.dev extension routes requests. Store a copy of your configuration files in this repository under /configs.
+Both clients use the config.json file to dictate how the continued extension routes requests. Store a copy of your configuration files in this repository under /configs.
 
-Mac Configuration (Local)File location: ~/.continue/config.json{
+Mac Configuration (Local)
+File location: ~/.continue/config.json
+
+{
   "models": [
     {
       "title": "Qwen Coder 32B (Chat)",

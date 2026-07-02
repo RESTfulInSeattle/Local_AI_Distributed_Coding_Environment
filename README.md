@@ -52,8 +52,11 @@ File location: ~/.continue/config.json
   }
 }
 
-Windows 11 Configuration (Networked)
+Windows 11 Configuration (Networked) - This currently doesn't function due to hard-coded local
 File location: %USERPROFILE%\.continue\config.jsonNote: Replace <MAC_IP_ADDRESS> with the actual local IP of the MacBook Pro (e.g., 192.168.1.15).
+
+To find IP address of Mac in Terminal
+    ipconfig getifaddr en0
 
 {
   "models": [

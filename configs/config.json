@@ -1,0 +1,16 @@
+{
+  "models": [
+    {
+      "title": "Qwen Coder 32B (Chat)",
+      "provider": "ollama",
+      "model": "qwen2.5-coder:32b",
+      "apiBase": "[http://127.0.0.1:11434](http://127.0.0.1:11434)"
+    }
+  ],
+  "tabAutocompleteModel": {
+    "title": "Qwen Coder 7B (Autocomplete)",
+    "provider": "ollama",
+    "model": "qwen2.5-coder:7b",
+    "apiBase": "[http://127.0.0.1:11434](http://127.0.0.1:11434)"
+  }
+}

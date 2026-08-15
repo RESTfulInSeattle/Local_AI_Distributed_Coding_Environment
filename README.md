@@ -81,3 +81,6 @@ To find IP address of Mac in Terminal
 Because Ollama does not have built-in authentication, binding to 0.0.0.0 exposes the inference engine to anyone on the immediate local Wi-Fi network. Ensure your home network is secured, and do not use this binding configuration on public Wi-Fi networks.
 
 A basic layer of security will be added in a future iteration.
+
+/Users/clayton/.ollama/models
+

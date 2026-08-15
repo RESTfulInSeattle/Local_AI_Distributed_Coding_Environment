@@ -1,86 +1,44 @@
 Local AI Distributed Coding Environment
+(llama.cpp Branch)
 
-This repository documents the infrastructure and configuration for a distributed, locally hosted Large Language Model (LLM) coding environment.
+This branch documents the infrastructure and configuration for a distributed, locally hosted Large Language Model (LLM) coding environment, utilizing llama.cpp as the bare-metal inference engine.
 
 By offloading the AI inference to a dedicated high-RAM host (Apple M5 Pro, 48GB Unified Memory), this setup provides privacy-first, zero-latency AI code assistance to multiple client machines across the local area network.
 
 
 🏗️ Architecture
 
-Inference Host: MacBook Pro (M5 Pro, 48GB RAM) running Ollama.
-Clients:
-    MacBook Pro (Local VS Code)
-    MS Surface with Windows 11 (Remote VS Code)
-IDE Integration: continued extension for VS Code.
-Models:
-    Chat & Reasoning: qwen2.5-coder:32b
-    Tab-Autocomplete (FIM): qwen2.5-coder:7b
+Inference Host: MacBook Pro (M5 Pro, 48GB RAM) running the llama.cpp HTTP server.
+Clients: Windows 11 Laptop (Remote VS Code)
+IDE Integration: Continued (or Continue.dev) extension for VS Code.
+Models (GGUF Format):Chat & Reasoning: qwen2.5-coder-32b-instruct-q4_K_M.gguf
 
 
 ⚙️ Host Setup (MacBook Pro)
 
-1.  Install Ollama for macOS.
-2.  Download Models:
-        ollama pull qwen2.5-coder:32b
-        ollama pull qwen2.5-coder:7b
-3.  Expose to Local Network.  By default Ollama binds to localhost. To allow the Windows machine to connect, set the host environment variable to 0.0.0.0.
-        #Run this in the Mac terminal, then restart the Ollama application
-        launchctl setenv OLLAMA_HOST "0.0.0.0"
+Unlike Ollama, llama.cpp requires you to download model weights manually and run the server via the command line.
+
+1. Install llama.cppThe easiest way to install a Metal-optimized version of llama.cpp on macOS is via Homebrew:
+brew install llama.cpp
+
+2. Download the Model
+Download the quantized GGUF model files from HuggingFace. A highly recommended repository is bartowski/Qwen2.5-Coder-32B-Instruct-GGUF.
+# Create a directory for your models
+mkdir -p ~/ai-models
+cd ~/ai-models
+
+# Download a 4-bit quantized version of the 32B model using wget or your browser
+wget https://huggingface.co/bartowski/Qwen2.5-Coder-32B-Instruct-GGUF/resolve/main/Qwen2.5-Coder-32B-Instruct-Q4_K_M.gguf
+
+3. Start the Inference Server
+Run the llama-server command. We will tell it to listen on 0.0.0.0 (all network interfaces) and use port 11434 so it perfectly mimics the Ollama endpoint your extensions are already looking for.
+llama-server -m ~/ai-models/Qwen2.5-Coder-32B-Instruct-Q4_K_M.gguf \
+  --host 0.0.0.0 \
+  --port 11434 \
+  -c 8192 \
+  -ngl 99
+-c 8192: Sets the context window to 8k tokens (adjust based on memory needs).-ngl 99: Offloads all layers to the M5 GPU (Metal) for maximum speed.
 
 
-💻 Client Configurations
-
-Both clients use the config.json file to dictate how the continued extension routes requests. Store a copy of your configuration files in this repository under /configs.
-
-Mac Configuration (Local)
-File location: ~/.continue/config.json
-
-{
-  "models": [
-    {
-      "title": "Qwen Coder 32B (Chat)",
-      "provider": "ollama",
-      "model": "qwen2.5-coder:32b",
-      "apiBase": "[http://127.0.0.1:11434](http://127.0.0.1:11434)"
-    }
-  ],
-  "tabAutocompleteModel": {
-    "title": "Qwen Coder 7B (Autocomplete)",
-    "provider": "ollama",
-    "model": "qwen2.5-coder:7b",
-    "apiBase": "[http://127.0.0.1:11434](http://127.0.0.1:11434)"
-  }
-}
-
-Windows 11 Configuration (Networked) - This currently doesn't function due to hard-coded local
-File location: %USERPROFILE%\.continue\config.jsonNote: Replace <MAC_IP_ADDRESS> with the actual local IP of the MacBook Pro (e.g., 192.168.1.15).
-
-To find IP address of Mac in Terminal
-    ipconfig getifaddr en0
-
-{
-  "models": [
-    {
-      "title": "Qwen Coder 32B (Remote Chat)",
-      "provider": "ollama",
-      "model": "qwen2.5-coder:32b",
-      "apiBase": "http://<MAC_IP_ADDRESS>:11434"
-    }
-  ],
-  "tabAutocompleteModel": {
-    "title": "Qwen Coder 7B (Remote Autocomplete)",
-    "provider": "ollama",
-    "model": "qwen2.5-coder:7b",
-    "apiBase": "http://<MAC_IP_ADDRESS>:11434"
-  }
-}
-
-
-🔒 Security Note for Future Development
-
-Because Ollama does not have built-in authentication, binding to 0.0.0.0 exposes the inference engine to anyone on the immediate local Wi-Fi network. Ensure your home network is secured, and do not use this binding configuration on public Wi-Fi networks.
-
-A basic layer of security will be added in a future iteration.
-
-/Users/clayton/.ollama/models
-
+💻 Client Configuration (Windows 11)
+Todo

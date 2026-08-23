@@ -1,7 +1,6 @@
 Local AI Distributed Coding Environment
-(llama.cpp Branch)
 
-This branch documents the infrastructure and configuration for a distributed, locally hosted Large Language Model (LLM) coding environment, utilizing llama.cpp as the bare-metal inference engine.
+This repo documents the infrastructure and configuration for a distributed, locally hosted Large Language Model (LLM) coding environment, utilizing llama.cpp as the bare-metal inference engine.
 
 By offloading the AI inference to a dedicated high-RAM host (Apple M5 Pro, 48GB Unified Memory), this setup provides privacy-first, zero-latency AI code assistance to multiple client machines across the local area network.
 
@@ -39,14 +38,11 @@ https://huggingface.co/ggml-org/Qwen3-4B-Thinking-2507-Q8_0-GGUF
 
 
 3. Start the Inference Server
-Run the llama-server command. We will tell it to listen on 0.0.0.0 (all network interfaces) and use port 11434 so it perfectly mimics the Ollama endpoint your extensions are already looking for.
+Run the llama-server command. We will tell it to listen on 0.0.0.0 (all network interfaces) and use port 11434 so it perfectly mimics the Ollama endpoint the vs code extensions are already looking for.
 
+Since I downloaded and manually build the llamma.cpp repo, this command is run from within the built llamma.cpp directory at build/bin
 
-llama-server -m ~/Development/ai-models/qwen3-4b-thinking-2507-q8_0.gguf 
--c 32768 
--ngl 99 
---host 0.0.0.0 
---port 11434
+./llama-server -m ~/Development/ai-models/qwen3-4b-thinking-2507-q8_0.gguf -c 32768 -ngl 99 --host 0.0.0.0 --port 11434
 
 
 -c 32768: Context Window

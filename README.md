@@ -1,66 +1,89 @@
-Local AI Distributed Coding Environment
+# **Local AI Distributed Coding Environment**
 
 This repo documents the infrastructure and configuration for a distributed, locally hosted Large Language Model (LLM) coding environment, utilizing llama.cpp as the bare-metal inference engine.
 
 By offloading the AI inference to a dedicated high-RAM host (Apple M5 Pro, 48GB Unified Memory), this setup provides privacy-first, zero-latency AI code assistance to multiple client machines across the local area network.
 
-
-🏗️ Architecture
-
-Inference Host: MacBook Pro (M5 Pro, 48GB RAM) running the llama.cpp HTTP server.
-Clients: Windows 11 Laptop (Remote VS Code)
-IDE Integration: Continued (or Continue.dev) extension for VS Code.
-Models (GGUF Format):Chat & Reasoning: qwen2.5-coder-32b-instruct-q4_K_M.gguf
+The first iteration of this project used Ollama, which you can find in the origin/Ollamma branch.
 
 
-⚙️ Host Setup (MacBook Pro)
+## **🏗️ Architecture**
+
+* **Inference Host:** MacBook Pro (M5 Pro, 48GB RAM) running the llama.cpp HTTP server.  
+* **Clients:**  
+  * VS Code run locally on the MacBook Pro  
+  * Windows 11 Laptop with VS Code and Visual Studio Professional 2026  
+* **IDE Integration:** *Continued* (or *Continue.dev*) extension for VS Code.  
+* **Models (GGUF Format):**  
+  * *Chat & Reasoning:* qwen3-4b-thinking-2507-q8\_0.gguf
+
+
+## **⚙️ Host Setup (MacBook Pro)**
 
 Unlike Ollama, llama.cpp requires you to download model weights manually and run the server via the command line.
 
-1. Install llama.cpp
+### **1\. Install llama.cpp**
+
 The easiest way to install a Metal-optimized version of llama.cpp on macOS is via Homebrew:
+
 brew install llama.cpp
 
-If you need more control, follow the build steps at the llama.cpp GitHub Repo
-https://github.com/ggml-org/llama.cpp/blob/master/docs/build.md 
+If you need more control, follow the build steps at the [llama.cpp GitHub Repo](https://github.com/ggml-org/llama.cpp/blob/master/docs/build.md).
+
+### **2\. Download the Model**
+
+Download the quantized GGUF model files from HuggingFace:
+
+[https://huggingface.co/ggml-org/models?search=qwen\&p=0](https://huggingface.co/ggml-org/models?search=qwen&p=0)
+
+\# Create a directory for your models  
+mkdir \-p \~/ai-models  
+cd \~/ai-models
+
+\# Download a 4-bit quantized version of the 32B model using wget or your browser  
+wget https://huggingface.co/ggml-org/Qwen3-4B-Thinking-2507-Q8\_0-GGUF/resolve/main/qwen3-4b-thinking-2507-q8\_0.gguf
+
+### **3\. Start the Inference Server**
+
+Run the llama-server command. We will tell it to listen on 0.0.0.0 (all network interfaces) and use port 11434 so it perfectly mimics the Ollama endpoint the VS Code extensions are already looking for.
+
+Since I downloaded and manually built the llama.cpp repo, this command is run from within the built llama.cpp directory at build/bin:
+
+./llama-server \-m \~/Development/ai-models/qwen3-4b-thinking-2507-q8\_0.gguf \-c 32768 \-ngl 99 \--host 0.0.0.0 \--port 11434
+
+### **Server Flags Explained**
+
+* **\-c 32768 (Context Window):**  
+  Sets the context window to 32k tokens. To put a 32k context window into perspective, that is roughly 24,000 words. You can easily highlight dozens of complex C\# files, drop in documentation, and ask the model to architect a solution without it "forgetting" the beginning of your prompt.  
+* **\-ngl 99 (Number of GPU Layers):**  
+  This flag tells llama.cpp how many layers of the AI model to offload to the GPU instead of the CPU. The Apple M5 Pro chip uses a highly efficient "Unified Memory" architecture and a powerful Metal GPU. By setting this to a ridiculously high number like 99 (which is higher than the total layers in most models), you force llama.cpp to load 100% of the model into your blazing-fast GPU memory.  
+* **\--host 0.0.0.0 (Network Binding):**  
+  By default, web servers (including llama-server) only listen to 127.0.0.1 (localhost). This means they will only talk to programs running on the exact same computer. Setting the host to 0.0.0.0 tells the server to listen to all available network interfaces, including your Wi-Fi card. This is what allows another client to access the engine.  
+* **\--port 11434 (Port Assignment):**  
+  This simply tells the server which network port to keep open for incoming HTTP requests. 11434 is the default port used by Ollama, so the client configuration from the Ollama iteration of this project can be used without changing the settings.
 
 
-2. Download the Model
-Download the quantized GGUF model files from HuggingFace. 
-https://huggingface.co/ggml-org/models?search=qwen&p=0
+## **💻 Client Configuration (Windows 11\)**
 
-# Create a directory for your models
-mkdir -p ~/ai-models
-cd ~/ai-models
+Because llama-server exposes an OpenAI-compatible API, you will configure your extensions to treat your Mac like an OpenAI server, bypassing any hardcoded Ollama restrictions.
 
-# Download a 4-bit quantized version of the 32B model using wget or your browser
-https://huggingface.co/ggml-org/Qwen3-4B-Thinking-2507-Q8_0-GGUF
+### **VS Code (Remote Windows 11 Client)**
 
+To access the Mac over your home Wi-Fi network:
 
-3. Start the Inference Server
-Run the llama-server command. We will tell it to listen on 0.0.0.0 (all network interfaces) and use port 11434 so it perfectly mimics the Ollama endpoint the vs code extensions are already looking for.
+1. Install **Continue** (or your preferred fork).  
+2. Set the Provider to OpenAI Compatible (or OpenAI).  
+3. Set the Base URL to your Mac's IP address: http://\<MAC\_IP\_ADDRESS\>:11434/v1  
+   *(e.g., http://192.168.1.136:11434/v1)*  
+4. Set the Model to: qwen3 (or any placeholder name; llama.cpp handles the actual routing).
 
-Since I downloaded and manually build the llamma.cpp repo, this command is run from within the built llamma.cpp directory at build/bin
+*Fallback (If the extension forces localhost):* Run ssh \-N \-L 11434:localhost:11434 mac\_username@\<MAC\_IP\_ADDRESS\> in Windows PowerShell to tunnel the connection.
 
-./llama-server -m ~/Development/ai-models/qwen3-4b-thinking-2507-q8_0.gguf -c 32768 -ngl 99 --host 0.0.0.0 --port 11434
+### **Visual Studio Professional 2026 (Windows 11\)**
 
-
--c 32768: Context Window
-
-Sets the context window to 32k tokens.  To put a 32k context window into perspective, that is roughly 24,000 words. You can easily highlight dozens of complex C# files, drop in documentation, and ask the model to architect a solution without it "forgetting" the beginning of your prompt.
-
--ngl 99: Number of GPU Layers.  
-
-This flag tells llama.cpp how many layers of the AI model to offload to the GPU instead of the CPU.  The Apple M5 Pro chip uses a highly efficient "Unified Memory" architecture and a powerful Metal GPU. By setting this to a ridiculously high number like 99 (which is higher than the total layers in most models), you force llama.cpp to load 100% of the model into your blazing-fast GPU memory. 
-
---host 0.0.0.0:  Network Binding
-By default, web servers (including llama-server) only listen to 127.0.0.1 (localhost). This means they will only talk to programs running on the exact same computer.
-
-Setting the host to 0.0.0.0 tells the server to listen to all available network interfaces, including your Wi-Fi card. This is what allows another client to access the engine.
-
---port 11434: Port Assignment
-This simply tells the server which network port to keep open for incoming HTTP requests.  11434 is the default port used by Ollama, so the client configuration from the Ollama iteration of this project can be used without changing the settings.
-
-
-💻 Client Configuration (Windows 11)
-Todo
+1. Open Visual Studio 2026 and go to **Extensions \> Manage Extensions**.  
+2. Search for and install the **Continue** extension for Visual Studio.  
+3. In the extension settings (usually under Tools \> Options \> Continue), set up a custom provider:  
+   * **API Type:** OpenAI  
+   * **API Base:** http://\<MAC\_IP\_ADDRESS\>:11434/v1  
+   * **API Key:** dummy-key (llama.cpp requires a string here, but ignores the value).

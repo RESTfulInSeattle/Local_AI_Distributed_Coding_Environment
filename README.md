@@ -49,6 +49,8 @@ Run the llama-server command. We will tell it to listen on 0.0.0.0 (all network 
 
 Since I downloaded and manually built the llama.cpp repo, this command is run from within the built llama.cpp directory at build/bin:
 
+cd ~/Development/llama.cpp/build/bin
+
 ./llama-server \-m \~/Development/ai-models/qwen3-4b-thinking-2507-q8\_0.gguf \-c 32768 \-ngl 99 \--host 0.0.0.0 \--port 11434
 
 ### **Server Flags Explained**

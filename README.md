@@ -64,8 +64,20 @@ cd ~/Development/llama.cpp/build/bin
 * **\--port 11434 (Port Assignment):**  
   This simply tells the server which network port to keep open for incoming HTTP requests. 11434 is the default port used by Ollama, so the client configuration from the Ollama iteration of this project can be used without changing the settings.
 
+## **💻 Client Configurations **
 
-## **💻 Client Configuration (Windows 11\)**
+### VS Code (Local Mac Client)
+
+Since this instance of VS Code is running on the same machine as the inference engine, you will connect via `localhost`.
+
+1. Install the **Continue** extension in VS Code.
+2. Go to the extension settings and add a new model/provider (or modify `~/.continue/config.json`).
+3. Set the Provider to `OpenAI` (or `OpenAI Compatible`).
+4. Set the Base URL to: `http://localhost:11434/v1`
+5. Set the Model to: `qwen3` (llama.cpp ignores this name and uses whatever model is currently loaded, but the extension requires a value).
+6. Set the API Key to: `dummy-key` (required by the extension's OpenAI format, but ignored by llama.cpp).
+
+
 
 Because llama-server exposes an OpenAI-compatible API, you will configure your extensions to treat your Mac like an OpenAI server, bypassing any hardcoded Ollama restrictions.
 

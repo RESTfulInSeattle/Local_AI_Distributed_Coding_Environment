@@ -45,11 +45,21 @@ wget https://huggingface.co/ggml-org/Qwen3-4B-Thinking-2507-Q8\_0-GGUF/resolve/m
 
 ### **3\. Start the Inference Server**
 
-Run the llama-server command. We will tell it to listen on 0.0.0.0 (all network interfaces) and use port 11434 so it perfectly mimics the Ollama endpoint the VS Code extensions are already looking for.
-
 Since I downloaded and manually built the llama.cpp repo, this command is run from within the built llama.cpp directory at build/bin:
 
-./llama-server \-m \~/Development/ai-models/qwen3-4b-thinking-2507-q8\_0.gguf \-c 32768 \-ngl 99 \--host 0.0.0.0 \--port 11434
+cd ~/Development/llama.cpp/build/bin
+
+**Model:** `qwen3-4b-thinking-2507-q8_0.gguf`
+
+* **Size/Type:** 4 Billion Parameters, 8-bit Quantization.
+* **RAM Footprint:** ~4.5 GB.
+* **Best For:** Quick Q&A, battery-saving mode, or tasks requiring massive context windows.
+* **Notes:** Leaves over 40GB of RAM free, allowing for massive 32k+ context windows to process dozens of files at once without slowing down.
+
+**Start Command:**
+
+./llama-server -m ~/Development/ai-models/qwen3-4b-thinking-2507-q8_0.gguf -c 32768 -ngl 99 --host 0.0.0.0 --port 11434
+
 
 ### **Server Flags Explained**
 
@@ -62,10 +72,42 @@ Since I downloaded and manually built the llama.cpp repo, this command is run fr
 * **\--port 11434 (Port Assignment):**  
   This simply tells the server which network port to keep open for incoming HTTP requests. 11434 is the default port used by Ollama, so the client configuration from the Ollama iteration of this project can be used without changing the settings.
 
+## **💻 Client Configurations **
 
-## **💻 Client Configuration (Windows 11\)**
+### VS Code (Local Mac Client)
 
-Because llama-server exposes an OpenAI-compatible API, you will configure your extensions to treat your Mac like an OpenAI server, bypassing any hardcoded Ollama restrictions.
+VS Code introduced a way to bypass third-party extensions entirely and hook custom, locally-hosted LLMs directly into the native VS Code Chat and Copilot UI.
+
+Because llama-server uses the OpenAI API standard, you can trick VS Code into treating your local Mac as an official OpenAI endpoint.
+Here is how to set it up:
+
+1. Manage Models in Copilot, and click Add models | Custom Endpoint
+
+
+2. Add the Custom Endpoint
+
+  "chat.languageModels": {
+    "local-qwen3": {
+      "endpoint": "http://127.0.0.1:11434/v1",
+      "model": "qwen3",
+      "provider": "openai",
+      "apiKey": "dummy-key"
+    }
+  },
+  "github.copilot.advanced": {
+    "debug.overrideChatEngine": "local-qwen3"
+  }
+
+
+3. Restart and Select
+Save the settings.json file.
+
+Completely restart VS Code.
+
+Open the native Chat panel on the left sidebar.
+
+Click the model dropdown menu at the top of the chat window. You should now see your local qwen3 model populated as an option!
+
 
 ### **VS Code (Remote Windows 11 Client)**
 

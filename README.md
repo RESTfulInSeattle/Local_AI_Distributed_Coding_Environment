@@ -76,18 +76,38 @@ cd ~/Development/llama.cpp/build/bin
 
 ### VS Code (Local Mac Client)
 
-Since this instance of VS Code is running on the same machine as the inference engine, you will connect via `localhost`.
+VS Code introduced a way to bypass third-party extensions entirely and hook custom, locally-hosted LLMs directly into the native VS Code Chat and Copilot UI.
 
-1. Install the **Continue** extension in VS Code.
-2. Go to the extension settings and add a new model/provider (or modify `~/.continue/config.json`).
-3. Set the Provider to `OpenAI` (or `OpenAI Compatible`).
-4. Set the Base URL to: `http://localhost:11434/v1`
-5. Set the Model to: `qwen3` (llama.cpp ignores this name and uses whatever model is currently loaded, but the extension requires a value).
-6. Set the API Key to: `dummy-key` (required by the extension's OpenAI format, but ignored by llama.cpp).
+Because llama-server uses the OpenAI API standard, you can trick VS Code into treating your local Mac as an official OpenAI endpoint.
+Here is how to set it up:
+
+1. Manage Models in Copilot, and click Add models | Custom Endpoint
 
 
+2. Add the Custom Endpoint
 
-Because llama-server exposes an OpenAI-compatible API, you will configure your extensions to treat your Mac like an OpenAI server, bypassing any hardcoded Ollama restrictions.
+  "chat.languageModels": {
+    "local-qwen3": {
+      "endpoint": "http://127.0.0.1:11434/v1",
+      "model": "qwen3",
+      "provider": "openai",
+      "apiKey": "dummy-key"
+    }
+  },
+  "github.copilot.advanced": {
+    "debug.overrideChatEngine": "local-qwen3"
+  }
+
+
+3. Restart and Select
+Save the settings.json file.
+
+Completely restart VS Code.
+
+Open the native Chat panel on the left sidebar.
+
+Click the model dropdown menu at the top of the chat window. You should now see your local qwen3 model populated as an option!
+
 
 ### **VS Code (Remote Windows 11 Client)**
 

@@ -4,6 +4,7 @@ This document tracks the Large Language Models (LLMs) configured for use in this
 
 All models are run via `llama.cpp` using the HuggingFace GGUF format to take advantage of the Apple M5 Pro's Metal GPU and Unified Memory architecture.
 
+
 ## 🚀 1. The Heavyweight (Deep Reasoning & Architecture)
 
 **Model:** `Qwen3-Omni-30B-A3B-Thinking-Q8_0.gguf`

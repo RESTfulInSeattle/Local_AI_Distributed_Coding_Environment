@@ -45,13 +45,21 @@ wget https://huggingface.co/ggml-org/Qwen3-4B-Thinking-2507-Q8\_0-GGUF/resolve/m
 
 ### **3\. Start the Inference Server**
 
-Run the llama-server command. We will tell it to listen on 0.0.0.0 (all network interfaces) and use port 11434 so it perfectly mimics the Ollama endpoint the VS Code extensions are already looking for.
-
 Since I downloaded and manually built the llama.cpp repo, this command is run from within the built llama.cpp directory at build/bin:
 
 cd ~/Development/llama.cpp/build/bin
 
-./llama-server \-m \~/Development/ai-models/qwen3-4b-thinking-2507-q8\_0.gguf \-c 32768 \-ngl 99 \--host 0.0.0.0 \--port 11434
+**Model:** `qwen3-4b-thinking-2507-q8_0.gguf`
+
+* **Size/Type:** 4 Billion Parameters, 8-bit Quantization.
+* **RAM Footprint:** ~4.5 GB.
+* **Best For:** Quick Q&A, battery-saving mode, or tasks requiring massive context windows.
+* **Notes:** Leaves over 40GB of RAM free, allowing for massive 32k+ context windows to process dozens of files at once without slowing down.
+
+**Start Command:**
+
+./llama-server -m ~/Development/ai-models/qwen3-4b-thinking-2507-q8_0.gguf -c 32768 -ngl 99 --host 0.0.0.0 --port 11434
+
 
 ### **Server Flags Explained**
 

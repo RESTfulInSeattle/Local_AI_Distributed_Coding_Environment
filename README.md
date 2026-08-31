@@ -86,27 +86,24 @@ Here is how to set it up:
 
 2. Add the Custom Endpoint
 
-  "chat.languageModels": {
-    "local-qwen3": {
-      "endpoint": "http://127.0.0.1:11434/v1",
-      "model": "qwen3",
-      "provider": "openai",
-      "apiKey": "dummy-key"
-    }
-  },
-  "github.copilot.advanced": {
-    "debug.overrideChatEngine": "local-qwen3"
-  }
+{
+    "name": "Local llama.cpp",
+    "vendor": "customendpoint",
+    "apiType": "openai",
+    "models": [
+        {
+            "id": "qwen3-4b-thinking",
+            "name": "Local Qwen3 (llama.cpp)",
+            "url": "http://127.0.0.1:11434/v1/chat/completions",
+            "toolCalling": true,
+            "vision": false,
+            "maxInputTokens": 32768,
+            "maxOutputTokens": 4096
+        }
+    ]
+}
 
 
-3. Restart and Select
-Save the settings.json file.
-
-Completely restart VS Code.
-
-Open the native Chat panel on the left sidebar.
-
-Click the model dropdown menu at the top of the chat window. You should now see your local qwen3 model populated as an option!
 
 
 ### **VS Code (Remote Windows 11 Client)**

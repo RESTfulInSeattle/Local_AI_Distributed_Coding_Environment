@@ -2,9 +2,9 @@
 
 This repo documents the infrastructure and configuration for a distributed, locally hosted Large Language Model (LLM) coding environment, utilizing llama.cpp as the bare-metal inference engine.
 
-By offloading the AI inference to a dedicated high-RAM host (Apple M5 Pro, 48GB Unified Memory), this setup provides privacy-first, zero-latency AI code assistance to multiple client machines across the local area network.
+By offloading the AI inference to a dedicated high-RAM host (Apple M5 Pro, 48GB Unified Memory), this setup provides the start of privacy-first low-latency AI code assistance to multiple client machines across a small local area network.
 
-The first iteration of this project used Ollama, which you can find in the origin/Ollamma branch.
+The first iteration of this project used Ollama, which you can find in the Ollamma branch.
 
 
 ## **🏗️ Architecture**
@@ -13,9 +13,13 @@ The first iteration of this project used Ollama, which you can find in the origi
 * **Clients:**  
   * VS Code run locally on the MacBook Pro  
   * Windows 11 Laptop with VS Code and Visual Studio Professional 2026  
-* **IDE Integration:** *Continued* (or *Continue.dev*) extension for VS Code.  
+* **IDE Integration:** 
+  * VS Code's integrated GitHub Copilot accepts Custom Endpoints for models.
+  * Visual Studio Professional 2026 currently accepts Ollama as a model, but will require more testing.
 * **Models (GGUF Format):**  
-  * *Chat & Reasoning:* qwen3-4b-thinking-2507-q8\_0.gguf
+  * Chat & Reasoning/Tooling:  Qwen3-Omni-30B-A3B-Thinking-Q8_0.gguf 
+  * Chat & Reasoning: qwen3-4b-thinking-2507-q8_0.gguf
+  * Autocomplete:  Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf
 
 
 ## **⚙️ Host Setup (MacBook Pro)**

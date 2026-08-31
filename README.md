@@ -78,9 +78,6 @@ cd ~/Development/llama.cpp/build/bin
 
 VS Code introduced a way to bypass third-party extensions entirely and hook custom, locally-hosted LLMs directly into the native VS Code Chat and Copilot UI.
 
-Because llama-server uses the OpenAI API standard, you can trick VS Code into treating your local Mac as an official OpenAI endpoint.
-Here is how to set it up:
-
 1. Manage Models in Copilot, and click Add models | Custom Endpoint
 
 
@@ -105,18 +102,29 @@ Here is how to set it up:
 
 
 
-
 ### **VS Code (Remote Windows 11 Client)**
 
-To access the Mac over your home Wi-Fi network:
+1. Manage Models in Copilot, and click Add models | Custom Endpoint
 
-1. Install **Continue** (or your preferred fork).  
-2. Set the Provider to OpenAI Compatible (or OpenAI).  
-3. Set the Base URL to your Mac's IP address: http://\<MAC\_IP\_ADDRESS\>:11434/v1  
-   *(e.g., http://192.168.1.136:11434/v1)*  
-4. Set the Model to: qwen3 (or any placeholder name; llama.cpp handles the actual routing).
 
-*Fallback (If the extension forces localhost):* Run ssh \-N \-L 11434:localhost:11434 mac\_username@\<MAC\_IP\_ADDRESS\> in Windows PowerShell to tunnel the connection.
+2. Add the Custom Endpoint
+
+{
+    "name": "Local llama.cpp",
+    "vendor": "customendpoint",
+    "apiType": "openai",
+    "models": [
+        {
+            "id": "qwen3-4b-thinking",
+            "name": "Local Qwen3 (llama.cpp)",
+            "url": "http://127.0.0.1:11434/v1/chat/completions",
+            "toolCalling": true,
+            "vision": false,
+            "maxInputTokens": 32768,
+            "maxOutputTokens": 4096
+        }
+    ]
+}
 
 ### **Visual Studio Professional 2026 (Windows 11\)**
 

@@ -13,7 +13,7 @@ The first iteration of this project used Ollama, which you can find in the origi
 * **Clients:**  
   * VS Code run locally on the MacBook Pro  
   * Windows 11 Laptop with VS Code and Visual Studio Professional 2026  
-* **IDE Integration:** *Continued* (or *Continue.dev*) extension for VS Code.  
+* **IDE Integration:** GitHub Copilot Custom Endpoint
 * **Models (GGUF Format):**  
   * *Chat & Reasoning:* qwen3-4b-thinking-2507-q8\_0.gguf
 

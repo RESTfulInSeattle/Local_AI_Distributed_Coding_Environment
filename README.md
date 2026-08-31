@@ -115,16 +115,17 @@ VS Code introduced a way to bypass third-party extensions entirely and hook cust
     "apiType": "openai",
     "models": [
         {
-            "id": "qwen3-4b-thinking",
-            "name": "Local Qwen3 (llama.cpp)",
-            "url": "http://127.0.0.1:11434/v1/chat/completions",
+            "id": "qwen3-omni-30b",
+            "name": "Local Qwen3 30B (llama.cpp)",
+            "url": "http://<mac ip address>:11434/v1/chat/completions",
             "toolCalling": true,
             "vision": false,
-            "maxInputTokens": 32768,
+            "maxInputTokens": 16384,
             "maxOutputTokens": 4096
         }
     ]
 }
+
 
 ### **Visual Studio Professional 2026 (Windows 11\)**
 

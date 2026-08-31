@@ -18,7 +18,23 @@ All models are run via `llama.cpp` using the HuggingFace GGUF format to take adv
 
 ./llama-server -m ~/Development/ai-models/Qwen3-Omni-30B-A3B-Thinking-Q8_0.gguf -c 16384 -ngl 99 -t 8 --host 0.0.0.0 --port 11434
 
-
+JSON
+{
+    "name": "Local llama.cpp",
+    "vendor": "customendpoint",
+    "apiType": "openai",
+    "models": [
+        {
+            "id": "qwen3-omni-30b",
+            "name": "Local Qwen3 30B (llama.cpp)",
+            "url": "[http://192.168.1.136:11434/v1/chat/completions](http://192.168.1.136:11434/v1/chat/completions)",
+            "toolCalling": true,
+            "vision": false,
+            "maxInputTokens": 16384,
+            "maxOutputTokens": 4096
+        }
+    ]
+}
 
 ## ⚡ 2. The Speedy Assistant (Fast Chat & Medium Context)
 
@@ -33,6 +49,23 @@ All models are run via `llama.cpp` using the HuggingFace GGUF format to take adv
 
 ./llama-server -m ~/Development/ai-models/qwen3-4b-thinking-2507-q8_0.gguf -c 32768 -ngl 99 --host 0.0.0.0 --port 11434
 
+JSON
+{
+    "name": "Local llama.cpp",
+    "vendor": "customendpoint",
+    "apiType": "openai",
+    "models": [
+        {
+            "id": "qwen3-4b-thinking",
+            "name": "Local Qwen3 4B (llama.cpp)",
+            "url": "[http://192.168.1.136:11434/v1/chat/completions](http://192.168.1.136:11434/v1/chat/completions)",
+            "toolCalling": true,
+            "vision": false,
+            "maxInputTokens": 32768,
+            "maxOutputTokens": 4096
+        }
+    ]
+}
 
 
 ## 💻 3. The Autocomplete Specialist (Background IDE Usage)
@@ -47,3 +80,21 @@ All models are run via `llama.cpp` using the HuggingFace GGUF format to take adv
 **Start Command:**
 
 ./llama-server -m ~/Development/ai-models/Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf -c 4096 -ngl 99 -t 8 --host 0.0.0.0 --port 11434
+
+JSON
+{
+    "name": "Local llama.cpp",
+    "vendor": "customendpoint",
+    "apiType": "openai",
+    "models": [
+        {
+            "id": "qwen2.5-coder-7b",
+            "name": "Local Qwen Coder 7B (llama.cpp)",
+            "url": "[http://192.168.1.136:11434/v1/chat/completions](http://192.168.1.136:11434/v1/chat/completions)",
+            "toolCalling": false,
+            "vision": false,
+            "maxInputTokens": 4096,
+            "maxOutputTokens": 1024
+        }
+    ]
+}

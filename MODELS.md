@@ -27,7 +27,7 @@ JSON
         {
             "id": "qwen3-omni-30b",
             "name": "Local Qwen3 30B (llama.cpp)",
-            "url": "[http://<mac ip address>:11434/v1/chat/completions](http://192.168.1.136:11434/v1/chat/completions)",
+            "url": "[http://<mac ip address>:11434/v1/chat/completions](http://<mac ip address>:11434/v1/chat/completions)",
             "toolCalling": true,
             "vision": false,
             "maxInputTokens": 16384,
@@ -58,7 +58,7 @@ JSON
         {
             "id": "qwen3-4b-thinking",
             "name": "Local Qwen3 4B (llama.cpp)",
-            "url": "[http://<mac ip address>:11434/v1/chat/completions](http://192.168.1.136:11434/v1/chat/completions)",
+            "url": "[http://<mac ip address>:11434/v1/chat/completions](http://<mac ip address>:11434/v1/chat/completions)",
             "toolCalling": true,
             "vision": false,
             "maxInputTokens": 32768,
@@ -90,7 +90,7 @@ JSON
         {
             "id": "qwen2.5-coder-7b",
             "name": "Local Qwen Coder 7B (llama.cpp)",
-            "url": "[http://<mac ip address>:11434/v1/chat/completions](http://192.168.1.136:11434/v1/chat/completions)",
+            "url": "[http://<mac ip address>:11434/v1/chat/completions](http://<mac ip address>:11434/v1/chat/completions)",
             "toolCalling": false,
             "vision": false,
             "maxInputTokens": 4096,

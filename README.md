@@ -76,6 +76,12 @@ cd ~/Development/llama.cpp/build/bin
 * **\--port 11434 (Port Assignment):**  
   This simply tells the server which network port to keep open for incoming HTTP requests. 11434 is the default port used by Ollama, so the client configuration from the Ollama iteration of this project can be used without changing the settings.
 
+  ### Host URL Determination
+
+  ipconfig getifaddr en0
+
+  
+
 ## **💻 Client Configurations **
 
 ### VS Code (Local Mac Client)
@@ -106,7 +112,7 @@ VS Code introduced a way to bypass third-party extensions entirely and hook cust
 
 
 
-### **VS Code (Remote Windows 11 Client)**
+### **VS Code (Windows 11 Client)**
 
 1. Manage Models in Copilot, and click Add models | Custom Endpoint
 
@@ -131,11 +137,10 @@ VS Code introduced a way to bypass third-party extensions entirely and hook cust
 }
 
 
-### **Visual Studio Professional 2026 (Windows 11\)**
+### **Visual Studio 2026 Professional (Windows 11 Client)**
 
-1. Open Visual Studio 2026 and go to **Extensions \> Manage Extensions**.  
-2. Search for and install the **Continue** extension for Visual Studio.  
-3. In the extension settings (usually under Tools \> Options \> Continue), set up a custom provider:  
-   * **API Type:** OpenAI  
-   * **API Base:** http://\<MAC\_IP\_ADDRESS\>:11434/v1  
-   * **API Key:** dummy-key (llama.cpp requires a string here, but ignores the value).
+In Visual Studio 2026 Professional, the "Custom Endpoint" terminology doesn't exist in the same way it does in VS Code.  
+
+It currently only has Ollama as a provider, so an LLM Router Proxy will be experimented with to use with llama.cpp
+
+

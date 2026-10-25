@@ -8,19 +8,24 @@ The first iteration of this project used Ollama (available in the Ollama branch)
 🏗️ Architecture (Three-Tier)
 This environment uses a production-grade three-tier architecture to support high concurrency, dynamic model routing, and secure local data retrieval:
 
-Inference Layer: vllm-mlx on the M5 Pro host. Replaces llama.cpp to leverage continuous batching and MLX-backed Metal kernels for maximum throughput on Apple Silicon.
+Inference Layer: vllm-mlx on the M5 Pro host. 
+Leverages continuous batching and MLX-backed Metal kernels for maximum throughput on Apple Silicon.
 
-Gateway Layer: LiteLLM Proxy. Acts as an AI gateway, standardizing APIs across models so Visual Studio 2026 and VS Code interact with local Qwen models exactly as they would with OpenAI.
+Gateway Layer: LiteLLM Proxy. 
+Acts as an AI gateway, standardizing APIs across models so Visual Studio 2026 and VS Code interact with local models exactly as they would with OpenAI.
 
-Context Layer: Telemetry MCP Server. A local Model Context Protocol (MCP) server that securely exposes system health and logs directly into the context window, preventing proprietary data from leaking to frontier cloud APIs.
+Context Layer: Telemetry MCP Server. https://github.com/RESTfulInSeattle/Telemetry_MCP_Server 
+A local Model Context Protocol (MCP) server that securely exposes system health and logs directly into the context window, preventing proprietary data from leaking to frontier cloud APIs.
 
 Inference Host: MacBook Pro (M5 Pro, 48GB RAM)
+
 
 Clients:
 
 VS Code run locally on the MacBook Pro
 
 Windows 11 Laptop with VS Code and Visual Studio Professional 2026
+
 
 Models:
 
@@ -29,6 +34,7 @@ Chat & Reasoning/Tooling: Qwen3-Omni-30B-A3B-Thinking
 Chat & Reasoning: qwen3-4b-thinking
 
 Autocomplete: Qwen2.5-Coder-7B-Instruct
+
 
 ⚙️ Tier 1: Inference Host Setup (vllm-mlx)
 Unlike the previous llama.cpp configuration, vllm utilizing the Apple MLX framework optimizes batching and prefix caching for multi-client workflows.
@@ -41,20 +47,37 @@ Bash
 uv venv vllm-env
 source vllm-env/bin/activate
 
-# Install vLLM tailored for Apple Silicon
-pip install vllm
+# Install vLLM using uv's lightning-fast installer
+uv pip install vllm
+
 2. Start the Inference Server
 Instead of using GGUF files, vllm works best with standard Safetensors downloaded from HuggingFace. It will automatically download the weights on first run.
 
-Bash
-# Start the 4B reasoning model on port 8000
-python -m vllm.entrypoints.openai.api_server \
-    --model Qwen/Qwen2.5-Coder-7B-Instruct \
+# Start the 7B coder model on port 8000 using uv's managed execution
+uv run vllm serve Qwen/Qwen2.5-Coder-7B-Instruct \
     --port 8000 \
-    --max-model-len 32768 \
-    --gpu-memory-utilization 0.9
+    --max-model-len 32768
+
 Note: Run your background autocomplete models on separate ports (e.g., 8001) if hosting concurrently.
 
+### Command Explained
+
+* **`uv run` (Managed Execution):**
+  Instead of manually activating a virtual environment (e.g., `source .venv/bin/activate`), `uv run` automatically detects your project's isolated environment and securely executes the command inside it.
+
+* **`vllm serve` (The Inference Engine):**
+  This is vLLM's modern, built-in command to spin up an OpenAI-compatible REST API server. It replaces the clunky, legacy `python -m` execution method.
+
+* **`Qwen/Qwen2.5-Coder-7B-Instruct` (The Target Model):**
+  This points vLLM directly to the HuggingFace repository for the 7-Billion parameter coding model. If you haven't run this command before, vLLM will automatically download and cache the Safetensors directly into your environment.
+
+* **`--port 8000` (Port Assignment):**
+  Tells the server to listen for local API requests on port `8000`. This is the endpoint your VS Code extensions (like Continue or Cline) will point to.
+
+* **`--max-model-len 32768` (Context Window):**
+  Sets the context window to roughly 32,000 tokens, which equates to about 24,000 words[cite: 1]. This ensures the model has enough "memory" to ingest multiple large code files and documentation simultaneously without exceeding your system's memory limits.
+
+  
 🚦 Tier 2: Gateway Router (LiteLLM Proxy)
 LiteLLM solves the Visual Studio 2026 compatibility issue by presenting a standard OpenAI-compatible API to all IDEs while routing traffic to your local vllm instances.
 

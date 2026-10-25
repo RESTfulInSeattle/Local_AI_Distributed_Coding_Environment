@@ -92,6 +92,17 @@ Run this command in your terminal (replacing the placeholder with your actual to
 export HF_TOKEN="hf_your_token_string_here"
 
 
+# To Test the Server
+
+curl http://127.0.0.1:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "mlx-community/Qwen2.5-Coder-7B-Instruct-4bit",
+    "messages": [
+      {"role": "user", "content": "Write a Hello World in Python."}
+    ]
+  }'
+
 
 🚦 Tier 2: Gateway Router (LiteLLM Proxy)
 LiteLLM solves the Visual Studio 2026 compatibility issue by presenting a standard OpenAI-compatible API to all IDEs while routing traffic to your local vllm instances.

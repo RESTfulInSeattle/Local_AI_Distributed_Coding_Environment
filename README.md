@@ -4,11 +4,21 @@ This repo documents the infrastructure and configuration for a distributed, loca
 
 By offloading the AI inference to a dedicated high-RAM host (Apple M5 Pro, 48GB Unified Memory), this setup provides privacy-first, low-latency AI code assistance to multiple client machines across a small local area network.
 
-The first iteration of this project used Ollama (available in the `ollama` branch), and the second used bare-metal llama.cpp (available in the `llama-cpp` branch).
+The first iteration of this project used Ollama (available in the ollama branch), and the second used bare-metal llama.cpp (llama-cpp branch).
+
+Current Architecture: vLLM + Apple MLX
+This iteration migrates the inference engine to vLLM utilizing the Apple MLX framework to solve the concurrency bottlenecks of earlier iterations. Key upgrades include:
+
+Continuous Batching: Dynamically batches incoming requests from multiple LAN clients, preventing one user's long generation from blocking the rest of the network.
+
+Prefix Caching: Reuses the compute for shared system prompts and large codebases, drastically reducing Time-To-First-Token (TTFT) for repetitive coding queries.
+
+Native Silicon Optimization: Leverages the MLX backend to fully exploit the M5 Pro's unified memory architecture for maximum throughput.
+
 
 ## 🏗️ Architecture (Three-Tier)
 
-This environment uses a production-grade three-tier architecture to support high concurrency, dynamic model routing, and secure local data retrieval:
+This environment uses a three-tier architecture to support high concurrency, dynamic model routing, and secure local data retrieval:
 
 * **Inference Layer: `vllm-mlx` on the M5 Pro host.** Leverages continuous batching and MLX-backed Metal kernels for maximum throughput on Apple Silicon.  
 * **Gateway Layer: LiteLLM Proxy.** Acts as an AI gateway, standardizing APIs across models so Visual Studio 2026 and VS Code interact with local models exactly as they would with OpenAI.  

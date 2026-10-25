@@ -1,146 +1,223 @@
-# **Local AI Distributed Coding Environment**
+# Local AI Distributed Coding Environment
 
-This repo documents the infrastructure and configuration for a distributed, locally hosted Large Language Model (LLM) coding environment, utilizing llama.cpp as the bare-metal inference engine.
+This repo documents the infrastructure and configuration for a distributed, locally hosted Large Language Model (LLM) coding environment.  By offloading the AI inference to a dedicated high-RAM host (Apple M5 Pro, 48GB Unified Memory), this setup provides privacy-first, low-latency AI code assistance to multiple client machines across a small local area network.
 
-By offloading the AI inference to a dedicated high-RAM host (Apple M5 Pro, 48GB Unified Memory), this setup provides the start of privacy-first low-latency AI code assistance to multiple client machines across a small local area network.
+The first iteration of this project used Ollama (available in the ollama branch), and the second used bare-metal llama.cpp (llama-cpp branch).
 
-The first iteration of this project used Ollama, which you can find in the Ollama branch.
+Current Architecture: vLLM + Apple MLX
+This iteration migrates the inference engine to vLLM utilizing the Apple MLX framework to solve the concurrency bottlenecks of earlier iterations. Key upgrades include:
 
+Continuous Batching: Dynamically batches incoming requests from multiple LAN clients, preventing one user's long generation from blocking the rest of the network.
 
-## **🏗️ Architecture**
+Prefix Caching: Reuses the compute for shared system prompts and large codebases, drastically reducing Time-To-First-Token (TTFT) for repetitive coding queries.
 
-* **Inference Host:** MacBook Pro (M5 Pro, 48GB RAM) running the llama.cpp HTTP server.  
-* **Clients:**  
-  * VS Code run locally on the MacBook Pro  
-  * Windows 11 Laptop with VS Code and Visual Studio Professional 2026  
-* **IDE Integration:** 
-  * VS Code's integrated GitHub Copilot accepts Custom Endpoints for models.
-  * Visual Studio Professional 2026 currently accepts Ollama as a model, but will require more testing.
-* **Models (GGUF Format):**  
-  * Chat & Reasoning/Tooling:  Qwen3-Omni-30B-A3B-Thinking-Q8_0.gguf 
-  * Chat & Reasoning: qwen3-4b-thinking-2507-q8_0.gguf
-  * Autocomplete:  Qwen2.5-Coder-7B-Instruct-Q4_K_M.gguf
+Native Silicon Optimization: Leverages the MLX backend to fully exploit the M5 Pro's unified memory architecture for maximum throughput.
 
 
-## **⚙️ Host Setup (MacBook Pro)**
+## 🏗️ Architecture (Three-Tier)
 
-Unlike Ollama, llama.cpp requires you to download model weights manually and run the server via the command line.
+This environment uses a three-tier architecture to support high concurrency, dynamic model routing, and secure local data retrieval:
 
-### **1\. Install llama.cpp**
+* **Inference Layer: `vllm-mlx` on the M5 Pro host.** Leverages continuous batching and MLX-backed Metal kernels for maximum throughput on Apple Silicon.  
+* **Gateway Layer: LiteLLM Proxy.** Acts as an AI gateway, standardizing APIs across models so Visual Studio 2026 and VS Code interact with local models exactly as they would with OpenAI.  
+* **Context Layer: Telemetry MCP Server.** A local Model Context Protocol (MCP) server that securely exposes system health and logs directly into the context window, preventing proprietary data from leaking to frontier cloud APIs.
 
-The easiest way to install a Metal-optimized version of llama.cpp on macOS is via Homebrew:
+### Hardware & Models
 
-brew install llama.cpp
+* **Inference Host:** MacBook Pro (M5 Pro, 48GB RAM)  
+* **Clients:** VS Code run locally on the MacBook Pro; Windows 11 Laptop with VS Code and Visual Studio Professional 2026  
+* **Models:**  
+  * Chat & Reasoning/Tooling: `Qwen3-Omni-30B-A3B-Thinking`  
+  * Chat & Reasoning: `qwen3-4b-thinking`  
+  * Autocomplete: `Qwen2.5-Coder-7B-Instruct`
 
-If you need more control, follow the build steps at the [llama.cpp GitHub Repo](https://github.com/ggml-org/llama.cpp/blob/master/docs/build.md).
+---
 
-### **2\. Download the Model**
+## ⚙️ Tier 1 & 2: Environment & Infrastructure Setup
 
-Download the quantized GGUF model files from HuggingFace:
+To prevent Python namespace collisions and Pydantic validation crashes on startup, both the `vllm-mlx` inference engine and the `litellm` proxy must be installed securely into the exact same isolated `uv` virtual environment.
 
-[https://huggingface.co/ggml-org/models?search=qwen\&p=0](https://huggingface.co/ggml-org/models?search=qwen&p=0)
+### 1\. Build the Unified Environment
 
-\# Create a directory for your models  
-mkdir \-p \~/ai-models  
-cd \~/ai-models
+Ensure you have a Python 3.10+ environment, then install the Apple Silicon-specific vLLM package alongside the LiteLLM proxy extras:
 
-\# Download a 4-bit quantized version of the 32B model using wget or your browser  
-wget https://huggingface.co/ggml-org/Qwen3-4B-Thinking-2507-Q8\_0-GGUF/resolve/main/qwen3-4b-thinking-2507-q8\_0.gguf
+\# Create a dedicated environment
 
-### **3\. Start the Inference Server**
+uv venv vllm-env
 
-Since I downloaded and manually built the llama.cpp repo, this command is run from within the built llama.cpp directory at build/bin:
+source vllm-env/bin/activate
 
-cd ~/Development/llama.cpp/build/bin
+\# Install the MLX-optimized vLLM package AND the LiteLLM proxy together
 
-**Model:** `qwen3-4b-thinking-2507-q8_0.gguf`
+uv pip install vllm-mlx "litellm\[proxy\]"
 
-* **Size/Type:** 4 Billion Parameters, 8-bit Quantization.
-* **RAM Footprint:** ~4.5 GB.
-* **Best For:** Quick Q&A, battery-saving mode, or tasks requiring massive context windows.
-* **Notes:** Leaves over 40GB of RAM free, allowing for massive 32k+ context windows to process dozens of files at once without slowing down.
+### 2\. Start the Inference Server (Tier 1\)
 
-**Start Command:**
+Instead of using GGUF files, `vllm-mlx` works best with MLX-optimized Safetensors downloaded from the HuggingFace `mlx-community`. It will automatically download the weights on first run.
 
-./llama-server -m ~/Development/ai-models/qwen3-4b-thinking-2507-q8_0.gguf -c 32768 -ngl 99 --host 0.0.0.0 --port 11434
+Open **Terminal 1**:
 
+source vllm-env/bin/activate
 
-### **Server Flags Explained**
+\# Start the 7B coder model on port 8000 using the vllm-mlx binary
 
-* **\-c 32768 (Context Window):**  
-  Sets the context window to 32k tokens. To put a 32k context window into perspective, that is roughly 24,000 words. You can easily highlight dozens of complex C\# files, drop in documentation, and ask the model to architect a solution without it "forgetting" the beginning of your prompt.  
-* **\-ngl 99 (Number of GPU Layers):**  
-  This flag tells llama.cpp how many layers of the AI model to offload to the GPU instead of the CPU. The Apple M5 Pro chip uses a highly efficient "Unified Memory" architecture and a powerful Metal GPU. By setting this to a ridiculously high number like 99 (which is higher than the total layers in most models), you force llama.cpp to load 100% of the model into your blazing-fast GPU memory.  
-* **\--host 0.0.0.0 (Network Binding):**  
-  By default, web servers (including llama-server) only listen to 127.0.0.1 (localhost). This means they will only talk to programs running on the exact same computer. Setting the host to 0.0.0.0 tells the server to listen to all available network interfaces, including your Wi-Fi card. This is what allows another client to access the engine.  
-* **\--port 11434 (Port Assignment):**  
-  This simply tells the server which network port to keep open for incoming HTTP requests. 11434 is the default port used by Ollama, so the client configuration from the Ollama iteration of this project can be used without changing the settings.
+uv run vllm-mlx serve mlx-community/Qwen2.5-Coder-7B-Instruct-4bit \\
 
-  ### Host URL Determination
+    \--port 8000 \\
 
-  ipconfig getifaddr en0
+    \--continuous-batching
 
-  
+*(Note: Run your background autocomplete models on separate ports, e.g., 8001, if hosting concurrently).*
 
-## **💻 Client Configurations **
+**Command Explained:**
 
-### VS Code (Local Mac Client)
+* **`uv run` (Managed Execution):** Automatically detects your project's isolated environment and securely executes the command inside it.  
+* **`vllm-mlx serve`:** Spins up the OpenAI-compatible REST API server utilizing Apple's Metal GPU and unified memory.  
+* **`--continuous-batching` (Performance Boost):** Explicitly enables the high-throughput, multi-client batching engine natively engineered for Apple Silicon.
 
-VS Code introduced a way to bypass third-party extensions entirely and hook custom, locally-hosted LLMs directly into the native VS Code Chat and Copilot UI.
+### 3\. Configure and Start the Gateway Router (Tier 2\)
 
-1. Manage Models in Copilot, and click Add models | Custom Endpoint
+LiteLLM intercepts OpenAI-compatible API calls, acting as a centralized AI gateway. It solves the Visual Studio 2026 compatibility issue by presenting a unified endpoint while routing traffic to your local vLLM instances.
 
+**Create `litellm_config.yaml`:** Create this YAML file in your project root. The `general_settings` block securely locks down your server so it doesn't boot exposed to the public network without a master key.
 
-2. Add the Custom Endpoint
+model\_list:
+
+  \- model\_name: qwen2.5-coder-7b
+
+    litellm\_params:
+
+      model: openai/Qwen/Qwen2.5-Coder-7B-Instruct
+
+      api\_base: "http\://localhost:8000/v1"
+
+      api\_key: "sk-local"
+
+  \- model\_name: qwen3-omni-30b
+
+    litellm\_params:
+
+      model: openai/Qwen3-Omni-30B-A3B-Thinking
+
+      api\_base: "http\://localhost:8001/v1"
+
+      api\_key: "sk-local"
+
+general\_settings:
+
+  master\_key: "sk-local"
+
+**Start the Gateway:** Open **Terminal 2**:
+
+source vllm-env/bin/activate
+
+\# Start LiteLLM proxy listening on all network interfaces, telemetry disabled for fast boot
+
+uv run litellm \--config litellm\_config.yaml \--host 0.0.0.0 \--port 11434 \--telemetry=False
+
+*(We intentionally use port 11434 to mimic Ollama. This ensures that any existing client configurations do not need to be updated).*
+
+---
+
+## 🔑 Hugging Face Authentication (Fixing Unauthenticated Errors)
+
+If you receive an "unauthenticated requests" warning or hit a rate limit while pulling models from Hugging Face, you need to authenticate your terminal.
+
+1. Create a free account at [Hugging Face](https://huggingface.co/).  
+2. Navigate to **Settings \> Access Tokens** and generate a new **Read** token.  
+3. Export the token into your Mac's environment before downloading or running the server.
+
+export HF\_TOKEN="hf\_your\_token\_string\_here"
+
+## 🧪 Testing the Servers
+
+To verify `vllm-mlx` is processing requests natively (bypassing the router):
+
+curl http\://localhost:8000/v1/chat/completions \\
+
+  \-H "Content-Type: application/json" \\
+
+  \-d '{
+
+    "model": "mlx-community/Qwen2.5-Coder-7B-Instruct-4bit",
+
+    "messages": \[
+
+      {"role": "user", "content": "Write a Hello World in Python."}
+
+    \]
+
+  }'
+
+---
+
+## 🔌 Tier 3: Context Layer (Telemetry MCP Server)
+
+To allow the local LLM to read local system logs and troubleshoot infrastructure without giving it raw bash access or sending trade secrets to the cloud, we bind it to our Custom MCP Server.
+
+1. **Start the MCP Server:** Ensure your Telemetry MCP server is configured and running per the instructions in the `Telemetry_MCP_Server` repository.  
+2. **VS Code Configuration (`~/.continue/config.json`):** Bind the MCP server to your local Qwen profile:
 
 {
-    "name": "Local llama.cpp",
-    "vendor": "customendpoint",
-    "apiType": "openai",
-    "models": [
-        {
-            "id": "qwen3-4b-thinking",
-            "name": "Local Qwen3 (llama.cpp)",
-            "url": "http://127.0.0.1:11434/v1/chat/completions",
-            "toolCalling": true,
-            "vision": false,
-            "maxInputTokens": 32768,
-            "maxOutputTokens": 4096
-        }
-    ]
+
+  "models": \[
+
+    {
+
+      "title": "Local Secure (Telemetry & Trade Secrets)",
+
+      "provider": "openai",
+
+      "model": "qwen3-4b-thinking",
+
+      "apiBase": "http\://\<mac\_ip\_address\>:11434/v1",
+
+      "apiKey": "sk-local"
+
+    }
+
+  \],
+
+  "mcpServers": {
+
+    "TelemetryInspector": {
+
+      "command": "uv",
+
+      "args": \[
+
+        "run",
+
+        "--directory",
+
+        "/Users/YOUR\_MAC\_USERNAME/Development/Telemetry\_MCP\_Server",
+
+        "python",
+
+        "src/telemetry\_mcp\_server/server.py"
+
+      \]
+
+    }
+
+  }
+
 }
 
+---
 
+## 💻 Client Configurations
 
-### **VS Code (Windows 11 Client)**
+Because LiteLLM is translating everything into the OpenAI standard, client configuration is vastly simplified.
 
-1. Manage Models in Copilot, and click Add models | Custom Endpoint
+### VS Code (Mac & Windows Clients)
 
+Open Copilot settings or Continue.dev. Add a Custom OpenAI Endpoint:
 
-2. Add the Custom Endpoint
+* **URL/Base URL:** `http://<mac_ip_address>:11434/v1`  
+* **Model:** `qwen3-4b-thinking` or `qwen3-omni-30b`  
+* **API Key:** `sk-local`
 
-{
-    "name": "Local llama.cpp",
-    "vendor": "customendpoint",
-    "apiType": "openai",
-    "models": [
-        {
-            "id": "qwen3-omni-30b",
-            "name": "Local Qwen3 30B (llama.cpp)",
-            "url": "http://<mac ip address>:11434/v1/chat/completions",
-            "toolCalling": true,
-            "vision": false,
-            "maxInputTokens": 16384,
-            "maxOutputTokens": 4096
-        }
-    ]
-}
+### Visual Studio 2026 Professional (Windows 11 Client)
 
-
-### **Visual Studio 2026 Professional (Windows 11 Client)**
-
-In Visual Studio 2026 Professional, the "Custom Endpoint" terminology doesn't exist in the same way it does in VS Code.  
-
-It currently only has Ollama as a provider, so an LLM Router Proxy will be experimented with to use with llama.cpp
-
-
+With LiteLLM Proxy acting as the API gateway, Visual Studio 2026 can now connect to your local models by targeting the proxy as a standard OpenAI endpoint or custom Ollama URL route, completely bypassing previous connection failures.

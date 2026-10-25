@@ -1,0 +1,14 @@
+model_list:
+  - model_name: qwen2.5-coder-7b
+    litellm_params:
+      model: openai/Qwen/Qwen2.5-Coder-7B-Instruct
+      api_base: "http://127.0.0.1:8000/v1"
+      api_key: "sk-local"
+  - model_name: qwen3-omni-30b
+    litellm_params:
+      model: openai/Qwen3-Omni-30B-A3B-Thinking
+      api_base: "http://127.0.0.1:8001/v1"
+      api_key: "sk-local"
+
+general_settings:
+  master_key: "sk-local"

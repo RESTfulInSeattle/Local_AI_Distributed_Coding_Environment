@@ -39,24 +39,25 @@ Autocomplete: Qwen2.5-Coder-7B-Instruct
 ⚙️ Tier 1: Inference Host Setup (vllm-mlx)
 Unlike the previous llama.cpp configuration, vllm utilizing the Apple MLX framework optimizes batching and prefix caching for multi-client workflows.
 
-1. Install vLLM with MLX Support
-Ensure you have a Python 3.10+ environment (using uv or pip), then install vllm:
+### 1. Install vLLM with MLX Support
+Ensure you have a Python 3.10+ environment, then install the Apple Silicon-specific vllm package:
 
-Bash
+```bash
 # Create a dedicated environment
 uv venv vllm-env
 source vllm-env/bin/activate
 
-# Install vLLM using uv's lightning-fast installer
-uv pip install vllm
+# Install the MLX-optimized vLLM package
+uv pip install vllm-mlx
 
-2. Start the Inference Server
-Instead of using GGUF files, vllm works best with standard Safetensors downloaded from HuggingFace. It will automatically download the weights on first run.
+### 2. Start the Inference Server
+Instead of using GGUF files, `vllm-mlx` works best with MLX-optimized Safetensors downloaded from the HuggingFace `mlx-community`. It will automatically download the weights on first run.
 
-# Start the 7B coder model on port 8000 using uv's managed execution
-uv run vllm serve Qwen/Qwen2.5-Coder-7B-Instruct \
+```bash
+# Start the 7B coder model on port 8000 using the vllm-mlx binary
+uv run vllm-mlx serve mlx-community/Qwen2.5-Coder-7B-Instruct-4bit \
     --port 8000 \
-    --max-model-len 32768
+    --continuous-batching
 
 Note: Run your background autocomplete models on separate ports (e.g., 8001) if hosting concurrently.
 
@@ -65,19 +66,33 @@ Note: Run your background autocomplete models on separate ports (e.g., 8001) if 
 * **`uv run` (Managed Execution):**
   Instead of manually activating a virtual environment (e.g., `source .venv/bin/activate`), `uv run` automatically detects your project's isolated environment and securely executes the command inside it.
 
-* **`vllm serve` (The Inference Engine):**
-  This is vLLM's modern, built-in command to spin up an OpenAI-compatible REST API server. It replaces the clunky, legacy `python -m` execution method.
+* **`vllm-mlx serve' (The Inference Engine):
+This is the specialized command to spin up the OpenAI-compatible REST API server utilizing Apple's Metal GPU and unified memory.
 
-* **`Qwen/Qwen2.5-Coder-7B-Instruct` (The Target Model):**
-  This points vLLM directly to the HuggingFace repository for the 7-Billion parameter coding model. If you haven't run this command before, vLLM will automatically download and cache the Safetensors directly into your environment.
+* **'mlx-community/Qwen2.5-Coder-7B-Instruct-4bit' (The Target Model):
+This points vllm-mlx to a HuggingFace repository specifically optimized for Apple Silicon. If you haven't run this command before, it will automatically download and cache the MLX Safetensors directly into your environment.
 
 * **`--port 8000` (Port Assignment):**
   Tells the server to listen for local API requests on port `8000`. This is the endpoint your VS Code extensions (like Continue or Cline) will point to.
 
-* **`--max-model-len 32768` (Context Window):**
-  Sets the context window to roughly 32,000 tokens, which equates to about 24,000 words[cite: 1]. This ensures the model has enough "memory" to ingest multiple large code files and documentation simultaneously without exceeding your system's memory limits.
+* **'--continuous-batching' (Performance Boost):
+This flag explicitly enables the high-throughput, multi-client batching engine and paged KV cache natively engineered for Apple Silicon. This ensures the engine doesn't queue requests sequentially, keeping inference speeds high even when VS Code autocomplete and chat windows are firing requests simultaneously.
 
-  
+
+ ### 🔑 Hugging Face Authentication (Fixing Unauthenticated Errors)
+
+If you receive an "unauthenticated requests" warning or hit a rate limit while pulling models from Hugging Face, you need to authenticate your terminal. 
+
+1. Create a free account at [Hugging Face](https://huggingface.co/).
+2. Navigate to **Settings > Access Tokens** and generate a new **Read** token.
+3. Export the token into your Mac's environment before downloading or running the server. 
+
+Run this command in your terminal (replacing the placeholder with your actual token):
+```bash
+export HF_TOKEN="hf_your_token_string_here"
+
+
+
 🚦 Tier 2: Gateway Router (LiteLLM Proxy)
 LiteLLM solves the Visual Studio 2026 compatibility issue by presenting a standard OpenAI-compatible API to all IDEs while routing traffic to your local vllm instances.
 

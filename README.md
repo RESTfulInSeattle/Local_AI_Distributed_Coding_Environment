@@ -4,7 +4,7 @@ This repo documents the infrastructure and configuration for a distributed, loca
 
 By offloading the AI inference to a dedicated high-RAM host (Apple M5 Pro, 48GB Unified Memory), this setup provides the start of privacy-first low-latency AI code assistance to multiple client machines across a small local area network.
 
-The first iteration of this project used Ollama, which you can find in the Ollamma branch.
+The first iteration of this project used Ollama, which you can find in the Ollama branch.
 
 
 ## **🏗️ Architecture**

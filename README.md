@@ -1,8 +1,6 @@
 # Local AI Distributed Coding Environment
 
-This repo documents the infrastructure and configuration for a distributed, locally hosted Large Language Model (LLM) coding environment.
-
-By offloading the AI inference to a dedicated high-RAM host (Apple M5 Pro, 48GB Unified Memory), this setup provides privacy-first, low-latency AI code assistance to multiple client machines across a small local area network.
+This repo documents the infrastructure and configuration for a distributed, locally hosted Large Language Model (LLM) coding environment.  By offloading the AI inference to a dedicated high-RAM host (Apple M5 Pro, 48GB Unified Memory), this setup provides privacy-first, low-latency AI code assistance to multiple client machines across a small local area network.
 
 The first iteration of this project used Ollama (available in the ollama branch), and the second used bare-metal llama.cpp (llama-cpp branch).
 

@@ -1,17 +1,16 @@
 # Local AI Distributed Coding Environment
 
-This repo documents the infrastructure and configuration for a distributed, locally hosted Large Language Model (LLM) coding environment.  By offloading the AI inference to a dedicated high-RAM host (Apple M5 Pro, 48GB Unified Memory), this setup provides privacy-first, low-latency AI code assistance to multiple client machines across a small local area network.
+This repo documents the infrastructure and configuration for a distributed, locally hosted Large Language Model (LLM) coding environment. By offloading the AI inference to a dedicated high-RAM host (Apple M5 Pro, 48GB Unified Memory), this setup provides privacy-first, low-latency AI code assistance to multiple client machines across a small local area network.
 
-The first iteration of this project used Ollama (available in the ollama branch), and the second used bare-metal llama.cpp (llama-cpp branch).
+**Architectural Evolution**
+This project has evolved through three major iterations to optimize for local network concurrency. While early iterations relying on Ollama (available in the `ollama` branch) and bare-metal llama.cpp (`llama-cpp` branch) provided excellent single-user performance, they struggled with request queuing when multiple clients hit the server simultaneously.
 
-Current Architecture: vLLM + Apple MLX
-This iteration migrates the inference engine to vLLM utilizing the Apple MLX framework to solve the concurrency bottlenecks of earlier iterations. Key upgrades include:
+**Current Architecture: vLLM + Apple MLX**
+To solve these concurrency bottlenecks, this iteration migrates the inference engine to vLLM utilizing the Apple MLX framework. This effectively transforms the M5 Pro from a single-task inference script into a high-throughput, multi-tenant inference server[cite: 6]. Key upgrades include:
 
-Continuous Batching: Dynamically batches incoming requests from multiple LAN clients, preventing one user's long generation from blocking the rest of the network.
-
-Prefix Caching: Reuses the compute for shared system prompts and large codebases, drastically reducing Time-To-First-Token (TTFT) for repetitive coding queries.
-
-Native Silicon Optimization: Leverages the MLX backend to fully exploit the M5 Pro's unified memory architecture for maximum throughput.
+* **Continuous Batching:** Dynamically batches incoming requests from multiple LAN clients, preventing one user's long generation from blocking the rest of the network[cite: 6].
+* **Prefix Caching:** Reuses the compute for shared system prompts and large codebases, drastically reducing Time-To-First-Token (TTFT) for repetitive coding queries[cite: 6].
+* **Native Silicon Optimization:** Leverages the MLX backend to fully exploit the M5 Pro's unified memory architecture for maximum throughput[cite: 6].
 
 
 ## 🏗️ Architecture (Three-Tier)
@@ -151,73 +150,47 @@ curl http\://localhost:8000/v1/chat/completions \\
 
 ---
 
-## 🔌 Tier 3: Context Layer (Telemetry MCP Server)
+## 🔌 Tier 3: Context Layer (Telemetry MCP Server & Trade Secret Siloing)
 
-To allow the local LLM to read local system logs and troubleshoot infrastructure without giving it raw bash access or sending trade secrets to the cloud, we bind it to our Custom MCP Server.
+To allow AI agents to troubleshoot local infrastructure without giving them raw bash access or exfiltrating proprietary data to the cloud, this environment utilizes a Custom MCP (Model Context Protocol) Server. 
 
-1. **Start the MCP Server:** Ensure your Telemetry MCP server is configured and running per the instructions in the `Telemetry_MCP_Server` repository.  
-2. **VS Code Configuration (`~/.continue/config.json`):** Bind the MCP server to your local Qwen profile:
+However, the primary enterprise value of this layer is **Trade Secret Siloing**. By acting as a strict governance boundary, the MCP server enables a **Hybrid-Trust Architecture**, allowing frontier cloud models to work on general system code while keeping proprietary algorithms and raw telemetry completely air-gapped on the local M5 Pro inference engine.
 
+### 🛡️ Supported Siloing Architectures
+
+This distributed environment supports multiple enterprise-grade data loss prevention (DLP) patterns to secure trade secrets:
+
+1. **Strict IDE Profile Binding (Zero-Egress Workflow):** 
+   By defining strict operational profiles in the client configurations, the Telemetry MCP server is exclusively bound to the local `Qwen3` inference engine. This guarantees that the MCP server serving the trade secrets is never exposed to a session communicating with an external API like Anthropic or OpenAI[cite: 10].
+2. **The Gateway Router (Tool-Triggered Model Swapping):** 
+   The LiteLLM AI Gateway acts as a middleman proxy[cite: 10]. If an agent attempts to invoke a restricted MCP tool (e.g., `read_core_algo()`), the gateway automatically intercepts the request and routes the context window strictly to the local model[cite: 10]. If the tool is benign, it routes to a frontier cloud model[cite: 10].
+3. **Sub-Agent Delegation:** 
+   Frontier models act as project managers but are network-isolated from the sensitive MCP server. When a cloud model needs to analyze proprietary code, it prompts a local sub-agent (running via `vllm-mlx`) which queries the MCP server, processes the raw trade secrets, and returns a sanitized summary[cite: 10].
+
+### MCP Client Configuration
+
+Because the Telemetry MCP server communicates over standard input/output (`stdio`), you do not need to start it manually. Your MCP-compatible client will automatically spawn and manage the server process in the background.
+
+To bind the MCP server to your local environment (utilizing the **Strict IDE Profile Binding** method), add the execution command to your client's configuration file (e.g., Claude Desktop, Cline, or your preferred MCP-enabled agent). Ensure `mcpServers` is formatted as an array:
+
+```json
 {
-
-  "models": \[
-
+  "mcpServers": [
     {
-
-      "title": "Local Secure (Telemetry & Trade Secrets)",
-
-      "provider": "openai",
-
-      "model": "qwen3-4b-thinking",
-
-      "apiBase": "http\://\<mac\_ip\_address\>:11434/v1",
-
-      "apiKey": "sk-local"
-
-    }
-
-  \],
-
-  "mcpServers": {
-
-    "TelemetryInspector": {
-
+      "name": "TelemetryInspector",
       "command": "uv",
-
-      "args": \[
-
+      "args": [
         "run",
-
         "--directory",
-
-        "/Users/YOUR\_MAC\_USERNAME/Development/Telemetry\_MCP\_Server",
-
+        "/Users/YOUR_MAC_USERNAME/Development/Telemetry_MCP_Server",
         "python",
-
-        "src/telemetry\_mcp\_server/server.py"
-
-      \]
-
+        "src/telemetry_mcp_server/server.py"
+      ]
     }
-
-  }
-
+  ]
 }
 
----
 
-## 💻 Client Configurations
+💻 Client Configurations
 
-Because LiteLLM is translating everything into the OpenAI standard, client configuration is vastly simplified.
-
-### VS Code (Mac & Windows Clients)
-
-Open Copilot settings or Continue.dev. Add a Custom OpenAI Endpoint:
-
-* **URL/Base URL:** `http://<mac_ip_address>:11434/v1`  
-* **Model:** `qwen3-4b-thinking` or `qwen3-omni-30b`  
-* **API Key:** `sk-local`
-
-### Visual Studio 2026 Professional (Windows 11 Client)
-
-With LiteLLM Proxy acting as the API gateway, Visual Studio 2026 can now connect to your local models by targeting the proxy as a standard OpenAI endpoint or custom Ollama URL route, completely bypassing previous connection failures.
+For comprehensive instructions on connecting your specific environments (VS Code on Mac, VS Code on Windows, and Visual Studio 2026) using native integrations, please refer to the CLIENTS.md guide.

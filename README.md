@@ -151,73 +151,31 @@ curl http\://localhost:8000/v1/chat/completions \\
 
 ---
 
-## 🔌 Tier 3: Context Layer (Telemetry MCP Server)
-
+🔌 Tier 3: Context Layer (Telemetry MCP Server)
 To allow the local LLM to read local system logs and troubleshoot infrastructure without giving it raw bash access or sending trade secrets to the cloud, we bind it to our Custom MCP Server.
 
-1. **Start the MCP Server:** Ensure your Telemetry MCP server is configured and running per the instructions in the `Telemetry_MCP_Server` repository.  
-2. **VS Code Configuration (`~/.continue/config.json`):** Bind the MCP server to your local Qwen profile:
+Because the Telemetry MCP server communicates over standard input/output (stdio), you do not need to start it manually. Your MCP-compatible client will automatically spawn and manage the server process in the background.
 
+MCP Client Configuration:
+To bind the MCP server to your local environment, add the execution command to your client's configuration file (e.g., Claude Desktop or your preferred MCP-enabled agent). Ensure mcpServers is formatted as an array:
+
+JSON
 {
-
-  "models": \[
-
+  "mcpServers": [
     {
-
-      "title": "Local Secure (Telemetry & Trade Secrets)",
-
-      "provider": "openai",
-
-      "model": "qwen3-4b-thinking",
-
-      "apiBase": "http\://\<mac\_ip\_address\>:11434/v1",
-
-      "apiKey": "sk-local"
-
-    }
-
-  \],
-
-  "mcpServers": {
-
-    "TelemetryInspector": {
-
+      "name": "TelemetryInspector",
       "command": "uv",
-
-      "args": \[
-
+      "args": [
         "run",
-
         "--directory",
-
-        "/Users/YOUR\_MAC\_USERNAME/Development/Telemetry\_MCP\_Server",
-
+        "/Users/YOUR_MAC_USERNAME/Development/Telemetry_MCP_Server",
         "python",
-
-        "src/telemetry\_mcp\_server/server.py"
-
-      \]
-
+        "src/telemetry_mcp_server/server.py"
+      ]
     }
-
-  }
-
+  ]
 }
+💻 Client Configurations
+Because our API Gateway (LiteLLM) translates everything into the standard OpenAI format, client configuration is vastly simplified and can often be handled natively by the IDE.
 
----
-
-## 💻 Client Configurations
-
-Because LiteLLM is translating everything into the OpenAI standard, client configuration is vastly simplified.
-
-### VS Code (Mac & Windows Clients)
-
-Open Copilot settings or Continue.dev. Add a Custom OpenAI Endpoint:
-
-* **URL/Base URL:** `http://<mac_ip_address>:11434/v1`  
-* **Model:** `qwen3-4b-thinking` or `qwen3-omni-30b`  
-* **API Key:** `sk-local`
-
-### Visual Studio 2026 Professional (Windows 11 Client)
-
-With LiteLLM Proxy acting as the API gateway, Visual Studio 2026 can now connect to your local models by targeting the proxy as a standard OpenAI endpoint or custom Ollama URL route, completely bypassing previous connection failures.
+For comprehensive instructions on connecting your specific environments (VS Code on Mac, VS Code on Windows, and Visual Studio 2026) using native integrations, please refer to the CLIENTS.md guide.

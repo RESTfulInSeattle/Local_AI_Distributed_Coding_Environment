@@ -189,7 +189,7 @@ To bind the MCP server to your local environment (utilizing the **Strict IDE Pro
     }
   ]
 }
-
+```
 
 💻 Client Configurations
 
